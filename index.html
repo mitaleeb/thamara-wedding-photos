@@ -494,6 +494,27 @@ body {
 }
 .firebase-setup a { color: #7A1528; }
 
+/* ─── PEOPLE LIST ─── */
+.people-list { display: flex; flex-direction: column; gap: 6px; }
+.people-list-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.person-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  background: var(--white);
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.person-row:active { transform: scale(0.98); }
+.person-row:hover { border-color: #394735; }
+.person-row-name { font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-style: italic; color: var(--deep); }
+.person-row-group { font-size: 11px; color: var(--muted); }
+.person-row-arrow { font-size: 12px; color: #394735; }
+.multiple-hint { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
+
 /* ─── ORNAMENT ─── */
 .ornament {
   text-align: center;
@@ -571,7 +592,8 @@ const PHOTOGRAPHER_PASSWORD = "photo2025";
       autocomplete="off"
       oninput="doLookup()"
     />
-    <div class="lookup-result" id="lookup-result">
+    <div id="lookup-people-list" style="display:none; margin-top:1rem;"></div>
+    <div class="lookup-result" id="lookup-result" style="margin-top:0.75rem;">
       <div class="result-card">
         <div class="result-label">Your photo group</div>
         <div class="result-group-name" id="lookup-group-name"></div>
@@ -758,62 +780,122 @@ function doLookup() {
   const query = document.getElementById('lookup-input').value.trim().toLowerCase();
   const resultEl = document.getElementById('lookup-result');
   const noResultEl = document.getElementById('lookup-no-result');
+  const peopleListEl = document.getElementById('lookup-people-list');
 
   if (!query || query.length < 2) {
     resultEl.classList.remove('visible');
     noResultEl.style.display = 'none';
+    peopleListEl.style.display = 'none';
     return;
   }
 
-  let found = null, foundIdx = -1;
+  // Find all individual people whose full name matches
+  let people = [];
   for (let i = 0; i < GROUPS.length; i++) {
     for (const m of GROUPS[i].members) {
       if (m.toLowerCase().includes(query)) {
-        found = GROUPS[i];
-        foundIdx = i;
-        break;
+        people.push({ name: m, group: GROUPS[i], idx: i });
       }
     }
-    if (found) break;
   }
 
-  if (found) {
-    document.getElementById('lookup-group-name').textContent = found.name;
-    document.getElementById('lookup-group-num').textContent = `Group #${foundIdx + 1} of ${GROUPS.length}`;
+  // Deduplicate by name — collect all groups per unique person name
+  const byName = {};
+  for (const p of people) {
+    if (!byName[p.name]) byName[p.name] = { name: p.name, entries: [] };
+    byName[p.name].entries.push({ group: p.group, idx: p.idx });
+  }
+  const uniquePeople = Object.values(byName);
 
-    const ci = currentGroupIndex;
-    let statusClass, statusMsg;
-    if (foundIdx === ci) {
-      statusClass = 'now';
-      statusMsg = '📸 Your group is being photographed right now — please head to the hall!';
-    } else if (foundIdx === ci + 1) {
-      statusClass = 'next';
-      statusMsg = '⏳ Your group is up next — start making your way to the hall soon.';
-    } else if (foundIdx < ci) {
-      statusClass = 'done';
-      statusMsg = '✓ Your group has already been photographed. Enjoy the celebration!';
-    } else {
-      const groupsAway = foundIdx - ci;
-      statusClass = 'upcoming';
-      if (groupsAway <= 3) {
-        statusMsg = 'Your group is coming up. Please make your way to the stage!';
-      } else if (groupsAway <= 5) {
-        statusMsg = 'Get ready — your group is coming soon!';
-      } else {
-        statusMsg = `Your group is coming up in ${groupsAway} groups. Enjoy the food — we'll call you!`;
-      }
-    }
-
-    const statusEl = document.getElementById('lookup-status');
-    statusEl.className = 'result-status ' + statusClass;
-    statusEl.textContent = statusMsg;
-
-    resultEl.classList.add('visible');
-    noResultEl.style.display = 'none';
-  } else {
+  if (uniquePeople.length === 0) {
     resultEl.classList.remove('visible');
+    peopleListEl.style.display = 'none';
     noResultEl.style.display = 'block';
+    return;
   }
+
+  // If more than one unique person matches, show a list to pick from
+  if (uniquePeople.length > 1) {
+    resultEl.classList.remove('visible');
+    noResultEl.style.display = 'none';
+    peopleListEl.style.display = 'block';
+    peopleListEl.innerHTML = `
+      <div class="people-list-label">Multiple people found — tap your name</div>
+      <div class="people-list">
+        ${uniquePeople.map(p => `
+          <div class="person-row" onclick="selectPerson('${p.name.replace(/'/g, "\'")}')">
+            <div>
+              <div class="person-row-name">${p.name}</div>
+              <div class="person-row-group">${p.entries.map(e => e.group.name).join(' · ')}</div>
+            </div>
+            <div class="person-row-arrow">→</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  // Exactly one unique person — show their result directly
+  peopleListEl.style.display = 'none';
+  showPersonResult(uniquePeople[0]);
+}
+
+function selectPerson(name) {
+  const entries = [];
+  for (let i = 0; i < GROUPS.length; i++) {
+    for (const m of GROUPS[i].members) {
+      if (m === name) entries.push({ group: GROUPS[i], idx: i });
+    }
+  }
+  showPersonResult({ name, entries });
+}
+
+function showPersonResult(person) {
+  const resultEl = document.getElementById('lookup-result');
+  const peopleListEl = document.getElementById('lookup-people-list');
+  const entries = person.entries;
+
+  if (entries.length > 1) {
+    document.getElementById('lookup-group-name').textContent = entries.map(e => e.group.name).join(' · ');
+    document.getElementById('lookup-group-num').textContent = `${person.name} is in ${entries.length} groups`;
+  } else {
+    document.getElementById('lookup-group-name').textContent = entries[0].group.name;
+    document.getElementById('lookup-group-num').textContent = `Group #${entries[0].idx + 1} of ${GROUPS.length}`;
+  }
+
+  const ci = currentGroupIndex;
+  const earliestUpcoming = entries.filter(e => e.idx >= ci).sort((a, b) => a.idx - b.idx)[0];
+  const activeEntry = earliestUpcoming || entries[entries.length - 1];
+
+  let statusClass, statusMsg;
+  if (entries.some(e => e.idx === ci)) {
+    statusClass = 'now';
+    statusMsg = '📸 Your group is being photographed right now — please head to the hall!';
+  } else if (entries.some(e => e.idx === ci + 1)) {
+    statusClass = 'next';
+    statusMsg = '⏳ Your group is up next — start making your way to the hall soon.';
+  } else if (entries.every(e => e.idx < ci)) {
+    statusClass = 'done';
+    statusMsg = '✓ All your groups have been photographed. Enjoy the celebration!';
+  } else {
+    const groupsAway = activeEntry.idx - ci;
+    statusClass = 'upcoming';
+    if (groupsAway <= 3) {
+      statusMsg = 'Your group is coming up. Please make your way to the stage!';
+    } else if (groupsAway <= 5) {
+      statusMsg = 'Get ready — your group is coming soon!';
+    } else {
+      statusMsg = `Your next group is coming up in ${groupsAway} groups. Enjoy the food — we'll call you!`;
+    }
+  }
+
+  const statusEl = document.getElementById('lookup-status');
+  statusEl.className = 'result-status ' + statusClass;
+  statusEl.textContent = statusMsg;
+
+  peopleListEl.style.display = 'none';
+  resultEl.classList.add('visible');
 }
 
 function renderLookup() {
