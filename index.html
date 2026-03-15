@@ -857,7 +857,7 @@ function showPersonResult(person) {
   const entries = person.entries;
 
   if (entries.length > 1) {
-    document.getElementById('lookup-group-name').textContent = entries.map(e => e.group.name).join(' · ');
+    document.getElementById('lookup-group-name').textContent = entries.map(e => `#${e.idx + 1} ${e.group.name}`).join(' · ');
     document.getElementById('lookup-group-num').textContent = `${person.name} is in ${entries.length} groups`;
   } else {
     document.getElementById('lookup-group-name').textContent = entries[0].group.name;
