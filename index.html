@@ -568,6 +568,7 @@ const FIREBASE_CONFIG = {
 
 // Photographer password - change this to whatever you want
 const PHOTOGRAPHER_PASSWORD = "photo2025";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnNvNi5ptzZMZ2kByru9qvwHS7wYWs5oHDFxi3OiTahz5hAMuzMPzIxNPlMx3GnVA03C3SlQDL_Ntt/pub?output=csv";
 </script>
 <!-- ════════════════════════════════ -->
 
@@ -660,33 +661,34 @@ const PHOTOGRAPHER_PASSWORD = "photo2025";
 
 <script>
 // ═══════════════════════════════════════
-// GROUP DATA
+// GROUP DATA — loaded from Google Sheet
 // ═══════════════════════════════════════
-const GROUPS = [
-  {"name":"Ammama's Cousins","members":["Balasundaram Sinnathurai","Vasanthy Balasundaram","Thuva Sinnathurai","Artharan Sinnathurai"]},
-  {"name":"Atlantic City - Kids","members":["Shivana Ramachandran","Gobi Thurairajah","Cynthia Krieger","Steven Krieger","Vijey Prabhakaran","Dipali Shah","Trishana Sathiyanesan","Prashana Sathiyanesan","Indhu Prabhakaran","Kinman Chung","Yuven Chung-Prabhakaran","Ashwini Sivaganesh"]},
-  {"name":"Atlantic City - Parents","members":["Asokan Paramanathan","Dolly Paramanathan","Anuvinthan Ramachandran","Asha Ramachandran","Siva Thurairajah","Sumetha Thurairajah","Thuraisingham Chanthirakanthan","Malli Chanthirakanthan","Sathi Sathiyanesan","Sashi Sathiyanesan","Paramanantham Prabhakaran","Vasantha Prabhakaran","Harry Vamadevan","Mathy Hariharan","Yaso Sivaganesh","Nash Sivaganesh","Thayaparan Selvathurai","Mirnaalini Thayaparan"]},
-  {"name":"Beekman Friends","members":["Khadija Alvi","Vijay Ramaiah","Sangeetha Ramaiah"]},
-  {"name":"California","members":["Manny Yogarajah","Aurea Vinothini Yogarajah","Jothy Yogarajah","Thulasi Yogarajah"]},
-  {"name":"Cricket Group - Kids","members":["Arvinth Thangavelan","Simruthi Thangavelan","Aakash Thangavelan","Harmeet Kaur","Archana Sivanandarajah","Pranavan Sriranganathan","Harin Ponna","Aysha Ponna","Prasat Mohan","Pragit Mohan","Amrutha Mohan","Adrija Pedditi","Shriyans Pedditi","Yashwanth Vemula","Yathin Vemula","Ayush Ramanan","Arya Ramanan","Brandan Balasingham","Dilshan Balasingham","Kamiya Patel","Shannan Balasingham-Romero","Charlie Romero"]},
-  {"name":"Cricket Group - Parents 1","members":["Namasivayam Gnanasakaran","Prabalini Gnanasakaran","Varunan Gnanasakaran","Soma Udayaraj","Sheila Villa","Murali Sharavan","Balan Kugapalan","Tharani Kugapalan","Rajkumar Sega","Rohini Sega","Choka Yogalingam","Venkata Pedditi","Rama Pedditi","Balaji Pappiah","Sudha Rangineni"]},
-  {"name":"Cricket Group - Parents 2","members":["Sharmila Thangavelan","Raja Skanthakumar","Minothini Skanthakumar","Siva Sivanandarajah","Sutha Sivanandarajah","Skanda Sriranganathan","Dharshini Sriranganathan","Ben Ponna","Thevaki Ponna","Thirugnanam Mohan","Chrisha Mohan","Gnanasakaran Ramanan","Priya Ramanan","Balathevan Balasingham","Thushyanthy Balasingham"]},
-  {"name":"Dad Cousins","members":["Harry Hariharan","Subo Hariharan","Shelvi Paskaran","Paskaran Vythilingam","Thaarun Paskaran","Tharuni Paskaran","Sivaruby Pathmakanthan","Chelliah Pathmakanthan"]},
-  {"name":"Dad Family","members":["Poomitta Sivachandran","Lax Kumaranayakam","Pia Amelia Kumaranayakam","Ella Riley Kumaranayakam","Aarabi Sivachandran","Scott Abercrombie","Cooper Abercrombie","Hudson Abercrombie","Manickam Sivachandran","Thayalini Sivachandran","Varathan Thiagarasa"]},
-  {"name":"Dad's Friends - Canada","members":["Jeyaganeshan Paramalingam","Sithamaparam Kathiravelu","Arjuna Gnanapragasam"]},
-  {"name":"Dad's Friends - Switzerland","members":["Rajamohan Rajalingam","Shorubha Rajamohan"]},
-  {"name":"Das & Branka","members":["Das Ganeshan","Branka Obradovic"]},
-  {"name":"Immediate Family","members":["Thayalan Thiagarajah","Kalyani Thayalan"]},
-  {"name":"Labrador","members":["Bindu Bharadwaj","Jaishankar Bharadwaj","Chiraj Bharadwaj","Ram Vellanki","Mitalee Bharadwaj","Mahesh Vellanki","Padma Vellanki"]},
-  {"name":"Nadarajah Fam","members":["Rathakrishnan Vettivelu","Tharani Rathakrishnan","Shaampavy Rathakrishnan","Varrun Rathakrishnan","Jeevan Rathakrishnan","Vakesan Nadarajah","Subajini Nadarajah","Thenral Nadarajah","Matullan Nadarajah"]},
-  {"name":"Nagarajah Family","members":["Anusuya Jeyakumar","Jeyakumar Jeyakumar","Chandramohan Thaya Nagarajah","Balini Chandramohan","Suganthini Umakanthan","Kanagaratnam Umakanthan","Jay Jeyamohan","Chandrika Jeyamohan","Shiva Nagarajah","Sutha Shivaparan"]},
-  {"name":"NJ Cousins - 1","members":["Nirosha Puvananayagam","Jeff Hemhauser","Jaxon Hemhauser","Nathiyah Asokan","Tejas Shirshikar","Ratheesh Asokan","Catharine Puccia","Dushyanthi Naveendra-Winley","Sola Winley","Kiran Winley","Thanusha Puvananayagam-Destin","Schuller Destin","Samaira Destin","Jainil Destin","Cinthia Naveendra","Nisal Hewathanthri"]},
-  {"name":"NJ Cousins - 2","members":["Sophia Sugumar","Julia Sugumar","Ranga Jayawardena","Sanje Ponnudurai","Ramyiah Ponnudurai","Sonia Chelliah","Anand Chelliah"]},
-  {"name":"NJ Cousins - 3","members":["Dinesh Jeyarajah","Amara Nash","Eric Nash","Eric Nilan Nash Jr.","Jay Tikoo","Geethan Sivananthan","Rachi Govil","Kian Sivananthan","Deeban Sivananthan"]},
-  {"name":"NJ Cousins - 4","members":["Gav Balasingam","Sachi Balasingam","Shuya Chang","Vivek Ramanathan","Gaithri Ramanathan","Elara Ramanathan","Ashwin Ramanathan","Ponnudurai Balasingam","Saratha Balasingam"]},
-  {"name":"NJ Cousins - Parents","members":["Janaki Sugumar","Shan Sugumar","Kanthiah Sivananthan","Lalitha Sivananthan","Ramanathan Asokan","Swarnalatha Asokan","Gajendran Ponnudurai","Vasugki Ponnudurai","Jay Jeyarajah","Raji Jeyarajah","Chithra Balasingham","Ravinder Tikoo","Krishna Srijeyanthan","Bala Balaravi","Bhavani Balaravi","Ramanathan Naveendra","Jeyamalar Naveendra","Regina Puvananayagam","Saro Balasingham","Jeyanthi Balagi","Rajini Rajendram"]},
-  {"name":"Tamil School","members":["Nirupa Kumarasamy","Akileswaran Kumarasamy","Ari Selvakumar","Kumar Selvakumar","Prashawn Collins","Tharsha Thasan","Shalini Santhakumar","Santhan Santhakumar","Thendral Santhakumar","Dhanen Santhakumar","Amalan Krishnamoorthy","Santhiyapillai Collins","Renuka Nadarajah"]}
-];
+let GROUPS = [];
+
+async function loadGroups() {
+  try {
+    const res = await fetch(CSV_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    const raw = {};
+    const order = [];
+    rows.forEach(row => {
+      const cols = row.match(/(".*?"|[^,]+)(?=,|$)/g) || row.split(',');
+      const clean = s => (s||'').trim().replace(/^"|"$/g,'');
+      const first = clean(cols[0]);
+      const last = clean(cols[1]);
+      const group = clean(cols[2]);
+      if (!group || group.toLowerCase() === 'sort' || group.toLowerCase() === 'photo group name') return;
+      const name = (first + ' ' + last).trim();
+      if (!raw[group]) { raw[group] = []; order.push(group); }
+      if (name && name !== ' ') raw[group].push(name);
+    });
+    GROUPS = order.map(g => ({ name: g, members: raw[g] }));
+    console.log('Loaded', GROUPS.length, 'groups from sheet');
+  } catch(e) {
+    console.error('Failed to load guest list:', e);
+  }
+}
 
 // ═══════════════════════════════════════
 // FIREBASE INIT
@@ -710,40 +712,42 @@ function pushState() {
   }
 }
 
-if (isFirebaseConfigured()) {
-  try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.database();
-    const ref = db.ref('state');
+loadGroups().then(() => {
+  if (isFirebaseConfigured()) {
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+      const ref = db.ref('state');
 
-    ref.once('value').then(snap => {
-      if (snap.val() === null) pushState();
-    });
+      ref.once('value').then(snap => {
+        if (snap.val() === null) pushState();
+      });
 
-    ref.on('value', snap => {
-      const val = snap.val();
-      if (val) {
-        activeGroupIndex = val.activeGroupIndex || 0;
-        completedGroups = new Set(val.completedGroups || []);
-        renderAll();
-      }
-    });
+      ref.on('value', snap => {
+        const val = snap.val();
+        if (val) {
+          activeGroupIndex = val.activeGroupIndex || 0;
+          completedGroups = new Set(val.completedGroups || []);
+          renderAll();
+        }
+      });
 
-    firebaseReady = true;
-  } catch(e) {
-    console.error('Firebase error:', e);
+      firebaseReady = true;
+    } catch(e) {
+      console.error('Firebase error:', e);
+      showFirebaseNotice();
+      renderAll();
+    }
+  } else {
     showFirebaseNotice();
+    activeGroupIndex = 0;
+    completedGroups = new Set();
+    renderAll();
   }
-} else {
-  showFirebaseNotice();
-  activeGroupIndex = 0;
-  completedGroups = new Set();
-  renderAll();
-}
+});
 
 function showFirebaseNotice() {
   document.getElementById('firebase-notice').style.display = 'block';
-  renderAll();
 }
 
 function renderAll() {
