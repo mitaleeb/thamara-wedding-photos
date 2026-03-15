@@ -795,7 +795,13 @@ function doLookup() {
     } else {
       const groupsAway = foundIdx - ci;
       statusClass = 'upcoming';
-      statusMsg = `Your group is coming up in ${groupsAway} group${groupsAway > 1 ? 's' : ''}. Enjoy the food — we'll call you!`;
+      if (groupsAway <= 3) {
+        statusMsg = 'Your group is coming up. Please make your way to the stage!';
+      } else if (groupsAway <= 5) {
+        statusMsg = 'Get ready — your group is coming soon!';
+      } else {
+        statusMsg = `Your group is coming up in ${groupsAway} groups. Enjoy the food — we'll call you!`;
+      }
     }
 
     const statusEl = document.getElementById('lookup-status');
