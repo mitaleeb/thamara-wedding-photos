@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thamara's Wedding · Photo Groups</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --gold: #a8bfa4;
+  --gold-light: #e8f0e7;
+  --gold-pale: #f2f7f2;
+  --gold-border: rgba(57,71,53,0.2);
+  --crimson: #394735;
+  --crimson-mid: #4a5e45;
+  --crimson-light: #6b8565;
+  --deep: #1a2218;
+  --surface: #f7faf7;
+  --white: #FFFFFF;
+  --muted: #607a5c;
+  --border: rgba(57,71,53,0.18);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Jost', sans-serif;
+  background: var(--surface);
+  min-height: 100vh;
+  color: var(--deep);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── HEADER ─── */
+.header {
+  background: var(--crimson);
+  padding: 1.1rem 1.25rem 1rem;
+  text-align: center;
+  border-bottom: 2px solid rgba(255,255,255,0.25);
+}
+.header-eyebrow {
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  font-weight: 300;
+  margin-bottom: 3px;
+  opacity: 0.8;
+}
+.header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.65rem;
+  color: #ffffff;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.header-sub {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  font-weight: 300;
+  margin-top: 2px;
+  opacity: 0.75;
+}
+
+/* ─── TABS ─── */
+.tabs {
+  display: flex;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.tab {
+  flex: 1;
+  padding: 0.7rem 0.25rem;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: 'Jost', sans-serif;
+}
+.tab.active {
+  color: #394735;
+  border-bottom-color: #394735;
+  background: var(--gold-pale);
+}
+
+/* ─── PANELS ─── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ─── GUEST VIEW ─── */
+.guest-panel {
+  padding: 1.25rem;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: blink 1.8s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.live-text {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.section-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+  margin-bottom: 7px;
+}
+
+.group-card {
+  background: var(--white);
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  padding: 1.1rem 1.1rem 1.1rem 1.4rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.group-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 4px; height: 100%;
+  background: #394735;
+}
+.group-card.next-card::before { background: #a8bfa4; }
+.group-card.done-card { opacity: 0.45; }
+.group-card.done-card::before { background: #ccc; }
+
+.group-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #394735;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.group-card.next-card .group-num { color: #6b8565; }
+
+.group-name-display {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  color: var(--deep);
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.members-wrap {
+  margin-top: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip {
+  background: var(--gold-pale);
+  border: 0.5px solid var(--border);
+  border-radius: 2px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--deep);
+  letter-spacing: 0.2px;
+}
+.group-card.next-card .chip {
+  background: #fffbf0;
+  border-color: rgba(201,168,76,0.2);
+}
+
+.divider-next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0.5rem 0;
+}
+.divider-next span {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #bbb;
+  white-space: nowrap;
+}
+.divider-next::before, .divider-next::after {
+  content: '';
+  flex: 1;
+  height: 0.5px;
+  background: var(--border);
+}
+
+.completed-note {
+  text-align: center;
+  padding: 2rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* ─── LOOKUP ─── */
+.lookup-panel {
+  padding: 1.25rem;
+}
+.lookup-intro {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.lookup-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 15px;
+  background: var(--white);
+  color: var(--deep);
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 0.2px;
+}
+.lookup-input::placeholder { color: #c0b090; }
+.lookup-input:focus { border-color: var(--gold); }
+
+.lookup-result {
+  margin-top: 1rem;
+  display: none;
+}
+.lookup-result.visible { display: block; }
+
+.result-card {
+  background: var(--white);
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  border-left: 4px solid #394735;
+}
+.result-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.result-group-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  color: #394735;
+  font-style: italic;
+}
+.result-group-num {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.result-status {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+}
+.result-status.now { background: #fef2f2; color: #991b1b; border: 0.5px solid #fca5a5; }
+.result-status.next { background: #fffbeb; color: #92400e; border: 0.5px solid #fcd34d; }
+.result-status.done { background: #f0fdf4; color: #166534; border: 0.5px solid #86efac; }
+.result-status.upcoming { background: var(--gold-pale); color: #78350f; border: 0.5px solid var(--gold-border); }
+
+.no-result {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── PHOTOGRAPHER ─── */
+.photo-panel {
+  padding: 1.25rem;
+}
+.photo-panel.locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  gap: 1rem;
+}
+.lock-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  color: var(--crimson);
+  font-style: italic;
+}
+.lock-input {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 15px;
+  text-align: center;
+  letter-spacing: 3px;
+  background: var(--white);
+  color: var(--deep);
+  outline: none;
+}
+.lock-input:focus { border-color: var(--gold); }
+.lock-btn {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.8rem;
+  background: #394735;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 500;
+}
+.lock-error { font-size: 12px; color: #c0392b; letter-spacing: 0.5px; }
+
+.pg-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 0.5px solid var(--border);
+}
+.pg-current-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.pg-current-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.45rem;
+  color: #394735;
+  font-style: italic;
+  line-height: 1.2;
+  max-width: 200px;
+}
+.pg-counter {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+.pg-counter strong { color: #394735; font-weight: 500; }
+
+.nav-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+.nav-btn {
+  flex: 1;
+  padding: 0.85rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid;
+}
+.nav-btn:active { transform: scale(0.97); }
+.nav-btn.back-btn {
+  background: var(--white);
+  border-color: var(--gold-border);
+  color: var(--deep);
+}
+.nav-btn.back-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.nav-btn.fwd-btn {
+  background: #394735;
+  border-color: #394735;
+  color: #ffffff;
+}
+.nav-btn.fwd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.groups-scroll-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #bbb;
+  margin-bottom: 8px;
+}
+.groups-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 4px;
+  background: var(--white);
+  border: 0.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.group-row:active { transform: scale(0.98); }
+.group-row.is-current {
+  background: #394735;
+  border-color: #394735;
+}
+.group-row.is-done { opacity: 0.45; }
+.row-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: #394735;
+  flex-shrink: 0;
+}
+.group-row.is-current .row-num { background: rgba(255,255,255,0.25); color: #ffffff; }
+.row-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  color: var(--deep);
+  font-style: italic;
+  flex: 1;
+}
+.group-row.is-current .row-name { color: var(--gold-light); }
+.row-badge {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #bbb;
+}
+.group-row.is-current .row-badge { color: var(--gold-light); opacity: 0.7; }
+
+/* ─── FIREBASE STATUS ─── */
+.firebase-setup {
+  margin: 1.5rem;
+  padding: 1rem;
+  background: #fff8e1;
+  border: 1px solid #f9c74f;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #5a3e00;
+}
+.firebase-setup code {
+  font-family: monospace;
+  background: rgba(0,0,0,0.07);
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 11px;
+}
+.firebase-setup a { color: #7A1528; }
+
+/* ─── ORNAMENT ─── */
+.ornament {
+  text-align: center;
+  color: #394735;
+  font-size: 14px;
+  opacity: 0.3;
+  padding: 1rem 0 0.5rem;
+  letter-spacing: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     👇 PASTE YOUR FIREBASE CONFIG HERE
+     Replace the placeholder values below with your
+     actual Firebase project config
+     ════════════════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyADsXRO7iHDSmu_QpbibQG4m2nxmrtADvQ",
+  authDomain: "wedding-photo-groups.firebaseapp.com",
+  databaseURL: "https://wedding-photo-groups-default-rtdb.firebaseio.com",
+  projectId: "wedding-photo-groups",
+  storageBucket: "wedding-photo-groups.firebasestorage.app",
+  messagingSenderId: "863625703599",
+  appId: "1:863625703599:web:5ffc6e47494560c5d3645a"
+};
+
+// Photographer password - change this to whatever you want
+const PHOTOGRAPHER_PASSWORD = "photo2025";
+</script>
+<!-- ════════════════════════════════ -->
+
+<div class="header">
+  <div class="header-eyebrow">✦ d &amp; t ✦</div>
+  <div class="header-title">Photo Group Queue</div>
+  <div class="header-sub">Live · Family Photos</div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab active" onclick="switchTab('guest')" role="tab">Now &amp; Next</button>
+  <button class="tab" onclick="switchTab('lookup')" role="tab">Find My Group</button>
+  <button class="tab" onclick="switchTab('photographer')" role="tab">Photographer</button>
+</div>
+
+<!-- GUEST VIEW -->
+<div id="panel-guest" class="panel active">
+  <div id="firebase-notice" class="firebase-setup" style="display:none">
+    <strong>⚠️ Firebase not configured yet.</strong><br>
+    Open this HTML file, find the <code>FIREBASE_CONFIG</code> block near the top, and paste in your Firebase project details.<br><br>
+    <a href="https://console.firebase.google.com" target="_blank">→ Go to Firebase Console</a>
+  </div>
+  <div class="guest-panel">
+    <div class="live-indicator">
+      <span class="live-dot"></span>
+      <span class="live-text">Live · updates automatically</span>
+    </div>
+    <div id="guest-content">
+      <div style="color:var(--muted); font-style:italic; font-size:13px; padding:2rem 0; text-align:center;">Connecting…</div>
+    </div>
+  </div>
+  <div class="ornament">✦ ✦ ✦</div>
+</div>
+
+<!-- LOOKUP -->
+<div id="panel-lookup" class="panel">
+  <div class="lookup-panel">
+    <p class="lookup-intro">Type your name below to find out which group you're in and when to head to the hall.</p>
+    <input
+      class="lookup-input"
+      type="text"
+      id="lookup-input"
+      placeholder="e.g. Priya Sharma"
+      autocomplete="off"
+      oninput="doLookup()"
+    />
+    <div class="lookup-result" id="lookup-result">
+      <div class="result-card">
+        <div class="result-label">Your photo group</div>
+        <div class="result-group-name" id="lookup-group-name"></div>
+        <div class="result-group-num" id="lookup-group-num"></div>
+        <div class="result-status" id="lookup-status"></div>
+      </div>
+    </div>
+    <div id="lookup-no-result" class="no-result" style="display:none; margin-top:1rem;">
+      No match found. Try a different spelling or check with the coordinator.
+    </div>
+  </div>
+  <div class="ornament">✦ ✦ ✦</div>
+</div>
+
+<!-- PHOTOGRAPHER VIEW -->
+<div id="panel-photographer" class="panel">
+  <!-- Lock screen -->
+  <div id="pg-lock" class="photo-panel locked">
+    <div class="lock-title">Photographer Access</div>
+    <input class="lock-input" type="password" id="pg-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlockPhotographer()" />
+    <button class="lock-btn" onclick="unlockPhotographer()">Unlock</button>
+    <div class="lock-error" id="pg-lock-error" style="display:none">Incorrect password</div>
+  </div>
+  <!-- Controls (hidden until unlocked) -->
+  <div id="pg-controls" class="photo-panel" style="display:none">
+    <div class="pg-status-bar">
+      <div>
+        <div class="pg-current-label">Now photographing</div>
+        <div class="pg-current-name" id="pg-name">—</div>
+      </div>
+      <div class="pg-counter">Group <strong id="pg-num">—</strong> of <strong id="pg-total">23</strong></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="nav-btn back-btn" id="btn-back" onclick="moveGroup(-1)" disabled>← Back</button>
+      <button class="nav-btn fwd-btn" id="btn-fwd" onclick="moveGroup(1)">Next Group →</button>
+    </div>
+
+    <div class="groups-scroll-label">All groups — tap to jump</div>
+    <div class="groups-scroll" id="pg-groups-list"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// GROUP DATA
+// ═══════════════════════════════════════
+const GROUPS = [
+  {"name":"Ammama's Cousins","members":["Balasundaram Sinnathurai","Vasanthy Balasundaram","Thuva Sinnathurai","Artharan Sinnathurai"]},
+  {"name":"Atlantic City - Kids","members":["Shivana Ramachandran","Gobi Thurairajah","Cynthia Krieger","Steven Krieger","Vijey Prabhakaran","Dipali Shah","Trishana Sathiyanesan","Prashana Sathiyanesan","Indhu Prabhakaran","Kinman Chung","Yuven Chung-Prabhakaran","Ashwini Sivaganesh"]},
+  {"name":"Atlantic City - Parents","members":["Asokan Paramanathan","Dolly Paramanathan","Anuvinthan Ramachandran","Asha Ramachandran","Siva Thurairajah","Sumetha Thurairajah","Thuraisingham Chanthirakanthan","Malli Chanthirakanthan","Sathi Sathiyanesan","Sashi Sathiyanesan","Paramanantham Prabhakaran","Vasantha Prabhakaran","Harry Vamadevan","Mathy Hariharan","Yaso Sivaganesh","Nash Sivaganesh","Thayaparan Selvathurai","Mirnaalini Thayaparan"]},
+  {"name":"Beekman Friends","members":["Khadija Alvi","Vijay Ramaiah","Sangeetha Ramaiah"]},
+  {"name":"California","members":["Manny Yogarajah","Aurea Vinothini Yogarajah","Jothy Yogarajah","Thulasi Yogarajah"]},
+  {"name":"Cricket Group - Kids","members":["Arvinth Thangavelan","Simruthi Thangavelan","Aakash Thangavelan","Harmeet Kaur","Archana Sivanandarajah","Pranavan Sriranganathan","Harin Ponna","Aysha Ponna","Prasat Mohan","Pragit Mohan","Amrutha Mohan","Adrija Pedditi","Shriyans Pedditi","Yashwanth Vemula","Yathin Vemula","Ayush Ramanan","Arya Ramanan","Brandan Balasingham","Dilshan Balasingham","Kamiya Patel","Shannan Balasingham-Romero","Charlie Romero"]},
+  {"name":"Cricket Group - Parents 1","members":["Namasivayam Gnanasakaran","Prabalini Gnanasakaran","Varunan Gnanasakaran","Soma Udayaraj","Sheila Villa","Murali Sharavan","Balan Kugapalan","Tharani Kugapalan","Rajkumar Sega","Rohini Sega","Choka Yogalingam","Venkata Pedditi","Rama Pedditi","Balaji Pappiah","Sudha Rangineni"]},
+  {"name":"Cricket Group - Parents 2","members":["Sharmila Thangavelan","Raja Skanthakumar","Minothini Skanthakumar","Siva Sivanandarajah","Sutha Sivanandarajah","Skanda Sriranganathan","Dharshini Sriranganathan","Ben Ponna","Thevaki Ponna","Thirugnanam Mohan","Chrisha Mohan","Gnanasakaran Ramanan","Priya Ramanan","Balathevan Balasingham","Thushyanthy Balasingham"]},
+  {"name":"Dad Cousins","members":["Harry Hariharan","Subo Hariharan","Shelvi Paskaran","Paskaran Vythilingam","Thaarun Paskaran","Tharuni Paskaran","Sivaruby Pathmakanthan","Chelliah Pathmakanthan"]},
+  {"name":"Dad Family","members":["Poomitta Sivachandran","Lax Kumaranayakam","Pia Amelia Kumaranayakam","Ella Riley Kumaranayakam","Aarabi Sivachandran","Scott Abercrombie","Cooper Abercrombie","Hudson Abercrombie","Manickam Sivachandran","Thayalini Sivachandran","Varathan Thiagarasa"]},
+  {"name":"Dad's Friends - Canada","members":["Jeyaganeshan Paramalingam","Sithamaparam Kathiravelu","Arjuna Gnanapragasam"]},
+  {"name":"Dad's Friends - Switzerland","members":["Rajamohan Rajalingam","Shorubha Rajamohan"]},
+  {"name":"Das & Branka","members":["Das Ganeshan","Branka Obradovic"]},
+  {"name":"Immediate Family","members":["Thayalan Thiagarajah","Kalyani Thayalan"]},
+  {"name":"Labrador","members":["Bindu Bharadwaj","Jaishankar Bharadwaj","Chiraj Bharadwaj","Ram Vellanki","Mitalee Bharadwaj","Mahesh Vellanki","Padma Vellanki"]},
+  {"name":"Nadarajah Fam","members":["Rathakrishnan Vettivelu","Tharani Rathakrishnan","Shaampavy Rathakrishnan","Varrun Rathakrishnan","Jeevan Rathakrishnan","Vakesan Nadarajah","Subajini Nadarajah","Thenral Nadarajah","Matullan Nadarajah"]},
+  {"name":"Nagarajah Family","members":["Anusuya Jeyakumar","Jeyakumar Jeyakumar","Chandramohan Thaya Nagarajah","Balini Chandramohan","Suganthini Umakanthan","Kanagaratnam Umakanthan","Jay Jeyamohan","Chandrika Jeyamohan","Shiva Nagarajah","Sutha Shivaparan"]},
+  {"name":"NJ Cousins - 1","members":["Nirosha Puvananayagam","Jeff Hemhauser","Jaxon Hemhauser","Nathiyah Asokan","Tejas Shirshikar","Ratheesh Asokan","Catharine Puccia","Dushyanthi Naveendra-Winley","Sola Winley","Kiran Winley","Thanusha Puvananayagam-Destin","Schuller Destin","Samaira Destin","Jainil Destin","Cinthia Naveendra","Nisal Hewathanthri"]},
+  {"name":"NJ Cousins - 2","members":["Sophia Sugumar","Julia Sugumar","Ranga Jayawardena","Sanje Ponnudurai","Ramyiah Ponnudurai","Sonia Chelliah","Anand Chelliah"]},
+  {"name":"NJ Cousins - 3","members":["Dinesh Jeyarajah","Amara Nash","Eric Nash","Eric Nilan Nash Jr.","Jay Tikoo","Geethan Sivananthan","Rachi Govil","Kian Sivananthan","Deeban Sivananthan"]},
+  {"name":"NJ Cousins - 4","members":["Gav Balasingam","Sachi Balasingam","Shuya Chang","Vivek Ramanathan","Gaithri Ramanathan","Elara Ramanathan","Ashwin Ramanathan","Ponnudurai Balasingam","Saratha Balasingam"]},
+  {"name":"NJ Cousins - Parents","members":["Janaki Sugumar","Shan Sugumar","Kanthiah Sivananthan","Lalitha Sivananthan","Ramanathan Asokan","Swarnalatha Asokan","Gajendran Ponnudurai","Vasugki Ponnudurai","Jay Jeyarajah","Raji Jeyarajah","Chithra Balasingham","Ravinder Tikoo","Krishna Srijeyanthan","Bala Balaravi","Bhavani Balaravi","Ramanathan Naveendra","Jeyamalar Naveendra","Regina Puvananayagam","Saro Balasingham","Jeyanthi Balagi","Rajini Rajendram"]},
+  {"name":"Tamil School","members":["Nirupa Kumarasamy","Akileswaran Kumarasamy","Ari Selvakumar","Kumar Selvakumar","Prashawn Collins","Tharsha Thasan","Shalini Santhakumar","Santhan Santhakumar","Thendral Santhakumar","Dhanen Santhakumar","Amalan Krishnamoorthy","Santhiyapillai Collins","Renuka Nadarajah"]}
+];
+
+// ═══════════════════════════════════════
+// FIREBASE INIT
+// ═══════════════════════════════════════
+let db = null;
+let currentGroupIndex = 0;
+let firebaseReady = false;
+
+function isFirebaseConfigured() {
+  return FIREBASE_CONFIG.apiKey !== "PASTE_YOUR_API_KEY_HERE" &&
+         FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "PASTE_YOUR_DATABASE_URL_HERE";
+}
+
+if (isFirebaseConfigured()) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    const ref = db.ref('currentGroupIndex');
+
+    // Initialize to 0 if doesn't exist
+    ref.once('value').then(snap => {
+      if (snap.val() === null) ref.set(0);
+    });
+
+    // Listen for live changes
+    ref.on('value', snap => {
+      const val = snap.val();
+      if (typeof val === 'number') {
+        currentGroupIndex = val;
+        renderGuestView();
+        renderLookup();
+        renderPgControls();
+      }
+    });
+
+    firebaseReady = true;
+  } catch(e) {
+    console.error('Firebase error:', e);
+    showFirebaseNotice();
+  }
+} else {
+  showFirebaseNotice();
+  // Run in demo mode
+  currentGroupIndex = 0;
+  renderGuestView();
+  renderLookup();
+  renderPgControls();
+}
+
+function showFirebaseNotice() {
+  document.getElementById('firebase-notice').style.display = 'block';
+  // Still render with local state for demo
+  renderGuestView();
+  renderPgControls();
+}
+
+// ═══════════════════════════════════════
+// RENDER GUEST VIEW
+// ═══════════════════════════════════════
+function renderGuestView() {
+  const i = currentGroupIndex;
+  const total = GROUPS.length;
+  const container = document.getElementById('guest-content');
+
+  if (i >= total) {
+    container.innerHTML = '<div class="completed-note">All photo groups have been photographed. Congratulations to the happy couple! 🎉</div>';
+    return;
+  }
+
+  const cur = GROUPS[i];
+  const nxt = GROUPS[i + 1];
+
+  let html = `
+    <div class="section-label">Now being photographed</div>
+    <div class="group-card">
+      <div class="group-num">#${i + 1}</div>
+      <div class="group-name-display">${cur.name}</div>
+      <div class="members-wrap">${cur.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+    </div>
+  `;
+
+  if (nxt) {
+    html += `
+      <div class="divider-next"><span>up next</span></div>
+      <div class="group-card next-card">
+        <div class="group-num">#${i + 2}</div>
+        <div class="group-name-display">${nxt.name}</div>
+        <div class="members-wrap">${nxt.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// NAME LOOKUP
+// ═══════════════════════════════════════
+function doLookup() {
+  const query = document.getElementById('lookup-input').value.trim().toLowerCase();
+  const resultEl = document.getElementById('lookup-result');
+  const noResultEl = document.getElementById('lookup-no-result');
+
+  if (!query || query.length < 2) {
+    resultEl.classList.remove('visible');
+    noResultEl.style.display = 'none';
+    return;
+  }
+
+  let found = null, foundIdx = -1;
+  for (let i = 0; i < GROUPS.length; i++) {
+    for (const m of GROUPS[i].members) {
+      if (m.toLowerCase().includes(query)) {
+        found = GROUPS[i];
+        foundIdx = i;
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  if (found) {
+    document.getElementById('lookup-group-name').textContent = found.name;
+    document.getElementById('lookup-group-num').textContent = `Group #${foundIdx + 1} of ${GROUPS.length}`;
+
+    const ci = currentGroupIndex;
+    let statusClass, statusMsg;
+    if (foundIdx === ci) {
+      statusClass = 'now';
+      statusMsg = '📸 Your group is being photographed right now — please head to the hall!';
+    } else if (foundIdx === ci + 1) {
+      statusClass = 'next';
+      statusMsg = '⏳ Your group is up next — start making your way to the hall soon.';
+    } else if (foundIdx < ci) {
+      statusClass = 'done';
+      statusMsg = '✓ Your group has already been photographed. Enjoy the celebration!';
+    } else {
+      const groupsAway = foundIdx - ci;
+      statusClass = 'upcoming';
+      statusMsg = `Your group is coming up in ${groupsAway} group${groupsAway > 1 ? 's' : ''}. Enjoy the food — we'll call you!`;
+    }
+
+    const statusEl = document.getElementById('lookup-status');
+    statusEl.className = 'result-status ' + statusClass;
+    statusEl.textContent = statusMsg;
+
+    resultEl.classList.add('visible');
+    noResultEl.style.display = 'none';
+  } else {
+    resultEl.classList.remove('visible');
+    noResultEl.style.display = 'block';
+  }
+}
+
+function renderLookup() {
+  const q = document.getElementById('lookup-input');
+  if (q && q.value.trim().length >= 2) doLookup();
+}
+
+// ═══════════════════════════════════════
+// PHOTOGRAPHER CONTROLS
+// ═══════════════════════════════════════
+let photographerUnlocked = false;
+
+function unlockPhotographer() {
+  const pw = document.getElementById('pg-password').value;
+  if (pw === PHOTOGRAPHER_PASSWORD) {
+    photographerUnlocked = true;
+    document.getElementById('pg-lock').style.display = 'none';
+    document.getElementById('pg-controls').style.display = 'block';
+    renderPgControls();
+  } else {
+    document.getElementById('pg-lock-error').style.display = 'block';
+  }
+}
+
+function moveGroup(dir) {
+  const newIdx = currentGroupIndex + dir;
+  if (newIdx < 0 || newIdx >= GROUPS.length) return;
+
+  if (firebaseReady && db) {
+    db.ref('currentGroupIndex').set(newIdx);
+  } else {
+    currentGroupIndex = newIdx;
+    renderGuestView();
+    renderLookup();
+    renderPgControls();
+  }
+}
+
+function jumpToGroup(idx) {
+  if (firebaseReady && db) {
+    db.ref('currentGroupIndex').set(idx);
+  } else {
+    currentGroupIndex = idx;
+    renderGuestView();
+    renderLookup();
+    renderPgControls();
+  }
+}
+
+function renderPgControls() {
+  if (!photographerUnlocked) return;
+  const i = currentGroupIndex;
+  const cur = GROUPS[i] || { name: 'All done!' };
+
+  document.getElementById('pg-name').textContent = cur.name;
+  document.getElementById('pg-num').textContent = i + 1;
+  document.getElementById('pg-total').textContent = GROUPS.length;
+
+  document.getElementById('btn-back').disabled = (i === 0);
+  document.getElementById('btn-fwd').disabled = (i >= GROUPS.length - 1);
+
+  const list = document.getElementById('pg-groups-list');
+  list.innerHTML = GROUPS.map((g, idx) => `
+    <div class="group-row ${idx === i ? 'is-current' : ''} ${idx < i ? 'is-done' : ''}" onclick="jumpToGroup(${idx})">
+      <div class="row-num">${idx + 1}</div>
+      <div class="row-name">${g.name}</div>
+      <div class="row-badge">${idx < i ? 'done' : idx === i ? 'now ✦' : ''}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['guest','lookup','photographer'][i] === tab);
+  });
+  ['guest','lookup','photographer'].forEach(id => {
+    document.getElementById('panel-' + id).classList.toggle('active', id === tab);
+  });
+}
+</script>
+</body>
+</html>
