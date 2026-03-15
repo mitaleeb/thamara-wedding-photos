@@ -447,6 +447,28 @@ body {
   border-color: #394735;
 }
 .group-row.is-done { opacity: 0.45; }
+.group-row.is-done .row-num {
+  background: #394735;
+  color: white;
+  font-size: 10px;
+}
+.done-check-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold-border);
+  background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #aaa;
+  transition: all 0.15s;
+}
+.done-check-btn.checked {
+  background: #394735;
+  border-color: #394735;
+  color: white;
+}
 .row-num {
   width: 22px; height: 22px;
   border-radius: 50%;
@@ -624,15 +646,14 @@ const PHOTOGRAPHER_PASSWORD = "photo2025";
         <div class="pg-current-label">Now photographing</div>
         <div class="pg-current-name" id="pg-name">—</div>
       </div>
-      <div class="pg-counter">Group <strong id="pg-num">—</strong> of <strong id="pg-total">23</strong></div>
+      <div class="pg-counter"><strong id="pg-num">—</strong> of <strong id="pg-total">23</strong> done</div>
     </div>
 
     <div class="nav-row">
-      <button class="nav-btn back-btn" id="btn-back" onclick="moveGroup(-1)" disabled>← Back</button>
-      <button class="nav-btn fwd-btn" id="btn-fwd" onclick="moveGroup(1)">Next Group →</button>
+      <button class="nav-btn fwd-btn" id="btn-mark-done" onclick="markCurrentDone()">Mark as Done ✓</button>
     </div>
 
-    <div class="groups-scroll-label">All groups — tap to jump</div>
+    <div class="groups-scroll-label">All groups — tap to set as current · tap ✓ to mark done</div>
     <div class="groups-scroll" id="pg-groups-list"></div>
   </div>
 </div>
@@ -671,7 +692,8 @@ const GROUPS = [
 // FIREBASE INIT
 // ═══════════════════════════════════════
 let db = null;
-let currentGroupIndex = 0;
+let activeGroupIndex = 0;      // which group is currently being photographed
+let completedGroups = new Set(); // set of indices that are done
 let firebaseReady = false;
 
 function isFirebaseConfigured() {
@@ -679,25 +701,31 @@ function isFirebaseConfigured() {
          FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "PASTE_YOUR_DATABASE_URL_HERE";
 }
 
+function pushState() {
+  if (firebaseReady && db) {
+    db.ref('state').set({
+      activeGroupIndex,
+      completedGroups: Array.from(completedGroups)
+    });
+  }
+}
+
 if (isFirebaseConfigured()) {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
-    const ref = db.ref('currentGroupIndex');
+    const ref = db.ref('state');
 
-    // Initialize to 0 if doesn't exist
     ref.once('value').then(snap => {
-      if (snap.val() === null) ref.set(0);
+      if (snap.val() === null) pushState();
     });
 
-    // Listen for live changes
     ref.on('value', snap => {
       const val = snap.val();
-      if (typeof val === 'number') {
-        currentGroupIndex = val;
-        renderGuestView();
-        renderLookup();
-        renderPgControls();
+      if (val) {
+        activeGroupIndex = val.activeGroupIndex || 0;
+        completedGroups = new Set(val.completedGroups || []);
+        renderAll();
       }
     });
 
@@ -708,17 +736,19 @@ if (isFirebaseConfigured()) {
   }
 } else {
   showFirebaseNotice();
-  // Run in demo mode
-  currentGroupIndex = 0;
-  renderGuestView();
-  renderLookup();
-  renderPgControls();
+  activeGroupIndex = 0;
+  completedGroups = new Set();
+  renderAll();
 }
 
 function showFirebaseNotice() {
   document.getElementById('firebase-notice').style.display = 'block';
-  // Still render with local state for demo
+  renderAll();
+}
+
+function renderAll() {
   renderGuestView();
+  renderLookup();
   renderPgControls();
 }
 
@@ -726,46 +756,59 @@ function showFirebaseNotice() {
 // RENDER GUEST VIEW
 // ═══════════════════════════════════════
 function renderGuestView() {
-  const i = currentGroupIndex;
-  const total = GROUPS.length;
   const container = document.getElementById('guest-content');
+  const allDone = completedGroups.size === GROUPS.length;
 
-  if (i >= total) {
+  if (allDone) {
     container.innerHTML = '<div class="completed-note">All photo groups have been photographed. Congratulations to the happy couple! 🎉</div>';
     return;
   }
 
-  const cur = GROUPS[i];
-  const nxt = GROUPS[i + 1];
-  const nxt2 = GROUPS[i + 2];
+  // upcoming = not yet completed, in original order
+  const upcoming = GROUPS
+    .map((g, idx) => ({ g, idx }))
+    .filter(({ idx }) => !completedGroups.has(idx));
+
+  const cur = upcoming[0];
+  const nxt = upcoming[1];
+  const nxt2 = upcoming[2];
+
+  // Show active group (what photographer set) or first uncompleted
+  const activeIsUncompleted = !completedGroups.has(activeGroupIndex);
+  const displayCur = activeIsUncompleted
+    ? { g: GROUPS[activeGroupIndex], idx: activeGroupIndex }
+    : cur;
+
+  // Build the "up next" and "coming up" from remaining uncompleted excluding current
+  const remaining = upcoming.filter(u => u.idx !== displayCur.idx);
 
   let html = `
     <div class="section-label">Now being photographed</div>
     <div class="group-card">
-      <div class="group-num">#${i + 1}</div>
-      <div class="group-name-display">${cur.name}</div>
-      <div class="members-wrap">${cur.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+      <div class="group-num">#${displayCur.idx + 1}</div>
+      <div class="group-name-display">${displayCur.g.name}</div>
+      <div class="members-wrap">${displayCur.g.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
     </div>
   `;
 
-  if (nxt) {
+  if (remaining[0]) {
     html += `
       <div class="divider-next"><span>up next</span></div>
       <div class="group-card next-card">
-        <div class="group-num">#${i + 2}</div>
-        <div class="group-name-display">${nxt.name}</div>
-        <div class="members-wrap">${nxt.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+        <div class="group-num">#${remaining[0].idx + 1}</div>
+        <div class="group-name-display">${remaining[0].g.name}</div>
+        <div class="members-wrap">${remaining[0].g.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
       </div>
     `;
   }
 
-  if (nxt2) {
+  if (remaining[1]) {
     html += `
       <div class="divider-next"><span>coming up</span></div>
       <div class="group-card next-card" style="opacity:0.7;">
-        <div class="group-num">#${i + 3}</div>
-        <div class="group-name-display">${nxt2.name}</div>
-        <div class="members-wrap">${nxt2.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+        <div class="group-num">#${remaining[1].idx + 1}</div>
+        <div class="group-name-display">${remaining[1].g.name}</div>
+        <div class="members-wrap">${remaining[1].g.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
       </div>
     `;
   }
@@ -857,14 +900,14 @@ function showPersonResult(person) {
   const entries = person.entries;
 
   if (entries.length > 1) {
-    document.getElementById('lookup-group-name').textContent = entries.map(e => `#${e.idx + 1} ${e.group.name}`).join(' · ');
+    document.getElementById('lookup-group-name').textContent = entries.map(e => e.group.name).join(' · ');
     document.getElementById('lookup-group-num').textContent = `${person.name} is in ${entries.length} groups`;
   } else {
     document.getElementById('lookup-group-name').textContent = entries[0].group.name;
     document.getElementById('lookup-group-num').textContent = `Group #${entries[0].idx + 1} of ${GROUPS.length}`;
   }
 
-  const ci = currentGroupIndex;
+  const ci = activeGroupIndex;
   const earliestUpcoming = entries.filter(e => e.idx >= ci).sort((a, b) => a.idx - b.idx)[0];
   const activeEntry = earliestUpcoming || entries[entries.length - 1];
 
@@ -920,51 +963,54 @@ function unlockPhotographer() {
   }
 }
 
-function moveGroup(dir) {
-  const newIdx = currentGroupIndex + dir;
-  if (newIdx < 0 || newIdx >= GROUPS.length) return;
+function markCurrentDone() {
+  completedGroups.add(activeGroupIndex);
+  // Auto-advance to next uncompleted group
+  const next = GROUPS.findIndex((_, idx) => idx > activeGroupIndex && !completedGroups.has(idx));
+  if (next !== -1) activeGroupIndex = next;
+  pushState();
+  if (!firebaseReady) renderAll();
+}
 
-  if (firebaseReady && db) {
-    db.ref('currentGroupIndex').set(newIdx);
+function toggleDone(idx, e) {
+  e.stopPropagation();
+  if (completedGroups.has(idx)) {
+    completedGroups.delete(idx);
   } else {
-    currentGroupIndex = newIdx;
-    renderGuestView();
-    renderLookup();
-    renderPgControls();
+    completedGroups.add(idx);
   }
+  pushState();
+  if (!firebaseReady) renderAll();
 }
 
 function jumpToGroup(idx) {
-  if (firebaseReady && db) {
-    db.ref('currentGroupIndex').set(idx);
-  } else {
-    currentGroupIndex = idx;
-    renderGuestView();
-    renderLookup();
-    renderPgControls();
-  }
+  activeGroupIndex = idx;
+  pushState();
+  if (!firebaseReady) renderAll();
 }
 
 function renderPgControls() {
   if (!photographerUnlocked) return;
-  const i = currentGroupIndex;
-  const cur = GROUPS[i] || { name: 'All done!' };
+  const cur = GROUPS[activeGroupIndex] || { name: 'All done!' };
+  const doneCount = completedGroups.size;
 
   document.getElementById('pg-name').textContent = cur.name;
-  document.getElementById('pg-num').textContent = i + 1;
+  document.getElementById('pg-num').textContent = doneCount;
   document.getElementById('pg-total').textContent = GROUPS.length;
 
-  document.getElementById('btn-back').disabled = (i === 0);
-  document.getElementById('btn-fwd').disabled = (i >= GROUPS.length - 1);
-
   const list = document.getElementById('pg-groups-list');
-  list.innerHTML = GROUPS.map((g, idx) => `
-    <div class="group-row ${idx === i ? 'is-current' : ''} ${idx < i ? 'is-done' : ''}" onclick="jumpToGroup(${idx})">
-      <div class="row-num">${idx + 1}</div>
-      <div class="row-name">${g.name}</div>
-      <div class="row-badge">${idx < i ? 'done' : idx === i ? 'now ✦' : ''}</div>
-    </div>
-  `).join('');
+  list.innerHTML = GROUPS.map((g, idx) => {
+    const isCurrent = idx === activeGroupIndex;
+    const isDone = completedGroups.has(idx);
+    return `
+      <div class="group-row ${isCurrent ? 'is-current' : ''} ${isDone ? 'is-done' : ''}" onclick="jumpToGroup(${idx})">
+        <div class="row-num">${idx + 1}</div>
+        <div class="row-name">${g.name}</div>
+        <div class="row-badge">${isCurrent && !isDone ? 'now ✦' : ''}</div>
+        <div class="done-check-btn ${isDone ? 'checked' : ''}" onclick="toggleDone(${idx}, event)">${isDone ? '✓' : ''}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ═══════════════════════════════════════
