@@ -862,7 +862,7 @@ function doLookup() {
   }
 
   // If more than one unique person matches, show a list to pick from
-  if (uniquePeople.length > 1) {
+  if (uniquePeople.length >= 1) {
     resultEl.classList.remove('visible');
     noResultEl.style.display = 'none';
     peopleListEl.style.display = 'block';
