@@ -606,7 +606,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnNvNi5ptzZMZ2
 <!-- LOOKUP -->
 <div id="panel-lookup" class="panel">
   <div class="lookup-panel">
-    <p class="lookup-intro">Type your name below to find out which group you're in and when to head to the hall.</p>
+    <p class="lookup-intro">Type your name below and click to find out which group you're in and when to head to the hall!</p>
     <input
       class="lookup-input"
       type="text"
@@ -807,15 +807,18 @@ function renderGuestView() {
     `;
   }
 
-  if (remaining[1]) {
-    html += `
-      <div class="divider-next"><span>coming up</span></div>
+  const comingUp = remaining.slice(1, 6);
+  if (comingUp.length > 0) {
+    html += `<div class="divider-next"><span>coming up</span></div>`;
+    comingUp.forEach(u => {
+      html += `
       <div class="group-card next-card" style="opacity:0.7;">
-        <div class="group-num">#${remaining[1].idx + 1}</div>
-        <div class="group-name-display">${remaining[1].g.name}</div>
-        <div class="members-wrap">${remaining[1].g.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
+        <div class="group-num">#${u.idx + 1}</div>
+        <div class="group-name-display">${u.g.name}</div>
+        <div class="members-wrap">${u.g.members.map(m => `<span class="chip">${m}</span>`).join('')}</div>
       </div>
-    `;
+      `;
+    });
   }
 
   container.innerHTML = html;
@@ -929,12 +932,14 @@ function showPersonResult(person) {
   } else {
     const groupsAway = activeEntry.idx - ci;
     statusClass = 'upcoming';
-    if (groupsAway <= 3) {
-      statusMsg = 'Your group is coming up. Please make your way to the stage!';
-    } else if (groupsAway <= 5) {
-      statusMsg = 'Get ready — your group is coming soon!';
+    if (groupsAway <= 30) {
+      statusMsg = "Please stay in the hall! We'll get to your group soon!";
+    } else if (groupsAway <= 40) {
+      statusMsg = 'Please be in the wedding hall, your group will be called up soon!';
+    } else if (groupsAway <= 45) {
+      statusMsg = 'Get ready to head over to the wedding hall, your group is coming up!';
     } else {
-      statusMsg = `Your next group is coming up in ${groupsAway} groups. Enjoy the food — we'll call you!`;
+      statusMsg = 'Get ready to head over to the wedding hall, your group is coming up!';
     }
   }
 
