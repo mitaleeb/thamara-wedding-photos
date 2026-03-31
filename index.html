@@ -925,7 +925,7 @@ function showPersonResult(person) {
     statusMsg = '📸 Your group is being photographed right now — please come to the stage!';
   } else if (entries.some(e => e.idx === ci + 1)) {
     statusClass = 'next';
-    statusMsg = '⏳ Your group is up next, please stay in the hall!.';
+    statusMsg = '⏳ Your group is up next — please be by the stage!.';
   } else if (entries.every(e => e.idx < ci)) {
     statusClass = 'done';
     statusMsg = '✓ All your groups have been photographed. Enjoy the celebration!';
