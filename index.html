@@ -932,14 +932,14 @@ function showPersonResult(person) {
   } else {
     const groupsAway = activeEntry.idx - ci;
     statusClass = 'upcoming';
-    if (groupsAway <= 30) {
+    if (groupsAway < 30) {
       statusMsg = "Please stay in the hall! We'll get to your group soon!";
-    } else if (groupsAway <= 40) {
+    } else if (groupsAway < 40) {
       statusMsg = 'Please be in the wedding hall, your group will be called up soon!';
-    } else if (groupsAway <= 45) {
+    } else if (groupsAway < 45) {
       statusMsg = 'Get ready to head over to the wedding hall, your group is coming up!';
     } else {
-      statusMsg = 'Get ready to head over to the wedding hall, your group is coming up!';
+      statusMsg = 'Enjoy the food — you have some time until your group is up!';
     }
   }
 
