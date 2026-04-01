@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thamara's Wedding · Find Your Table</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<script>
+  // 👇 PASTE YOUR SEATING CSV URL HERE
+  const SEATING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1sHkAEBe1Jmequx9Wn6FQyHQEOsTMMLZQtk5QRvmvNbSQu0-DiYR_NTS112tb5mgbT8iLQmbZJObT/pub?gid=0&single=true&output=csv";
+</script>
+
+<style>
+:root {
+  --green: #394735;
+  --green-mid: #4a5e45;
+  --green-light: #6b8565;
+  --green-pale: #f2f7f2;
+  --green-border: rgba(57,71,53,0.2);
+  --surface: #f7faf7;
+  --white: #ffffff;
+  --deep: #1a2218;
+  --muted: #607a5c;
+  --border: rgba(57,71,53,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Jost', sans-serif;
+  background: var(--surface);
+  min-height: 100vh;
+  color: var(--deep);
+  -webkit-font-smoothing: antialiased;
+}
+
+.header {
+  background: var(--green);
+  padding: 1.4rem 1.25rem 1.2rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.header-eyebrow {
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  font-weight: 300;
+  margin-bottom: 4px;
+}
+.header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  color: #ffffff;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.header-sub {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  font-weight: 300;
+  margin-top: 3px;
+}
+
+.main {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.intro {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.search-wrap {
+  position: relative;
+  margin-bottom: 1rem;
+}
+.search-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px; height: 15px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.6rem;
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 15px;
+  background: var(--white);
+  color: var(--deep);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input::placeholder { color: #b0c4ae; }
+.search-input:focus { border-color: var(--green); }
+
+.people-list-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.people-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 0.75rem;
+}
+.person-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  background: var(--white);
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.person-row:hover { border-color: var(--green); }
+.person-row:active { transform: scale(0.99); }
+.person-row-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--deep);
+}
+.person-row-table { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.person-row-arrow { font-size: 12px; color: var(--green); flex-shrink: 0; }
+
+/* Result card */
+.result-card {
+  background: var(--white);
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
+  overflow: hidden;
+  display: none;
+  margin-bottom: 0.75rem;
+}
+.result-card.visible { display: block; }
+
+.result-top {
+  background: var(--green);
+  padding: 1.25rem 1.25rem 1.1rem;
+  text-align: center;
+}
+.result-greeting {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 3px;
+}
+.result-person-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  color: #ffffff;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.result-body {
+  padding: 1.25rem;
+}
+
+.table-hero {
+  text-align: center;
+  padding: 0.75rem 0 1rem;
+}
+.table-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.table-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 4.5rem;
+  font-weight: 600;
+  color: var(--green);
+  line-height: 1;
+}
+
+.divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 1rem 0;
+}
+
+.tablemates-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.tablemates-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tablemate-chip {
+  background: var(--green-pale);
+  border: 0.5px solid var(--green-border);
+  border-radius: 2px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--deep);
+  letter-spacing: 0.2px;
+}
+.tablemate-chip.you {
+  background: var(--green);
+  color: #ffffff;
+  border-color: var(--green);
+}
+
+.back-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.65rem;
+  background: none;
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.back-btn:hover { border-color: var(--green); color: var(--green); }
+
+.no-result {
+  text-align: center;
+  padding: 1.25rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  display: none;
+}
+
+#people-list-wrap { display: none; }
+
+.ornament {
+  text-align: center;
+  color: var(--green);
+  font-size: 14px;
+  opacity: 0.25;
+  padding: 2rem 0 0;
+  letter-spacing: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">✦ d & t ✦</div>
+  <div class="header-title">Find Your Table</div>
+  <div class="header-sub">Reception · Dinner Seating</div>
+</div>
+
+<div class="main">
+  <p class="intro">Type your name to find your table.</p>
+
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6.5" cy="6.5" r="5" stroke="#394735" stroke-width="1.5"/>
+      <path d="M10.5 10.5L14 14" stroke="#394735" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input
+      class="search-input"
+      type="text"
+      id="search-input"
+      placeholder="e.g. Thamara Thayalan"
+      autocomplete="off"
+      oninput="doSearch()"
+    />
+  </div>
+
+  <div id="people-list-wrap">
+    <div class="people-list-label" id="people-label"></div>
+    <div class="people-list" id="people-list"></div>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-top">
+      <div class="result-greeting">Your seat</div>
+      <div class="result-person-name" id="result-name"></div>
+    </div>
+    <div class="result-body">
+      <div class="table-hero">
+        <div class="table-label">Table</div>
+        <div class="table-number" id="result-table-num"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="tablemates-label">Others at your table</div>
+      <div class="tablemates-wrap" id="result-tablemates"></div>
+      <button class="back-btn" onclick="clearResult()">← Search again</button>
+    </div>
+  </div>
+
+  <div class="no-result" id="no-result">
+    No match found. Try a different spelling or check with the coordinator.
+  </div>
+
+  <div class="ornament">✦ ✦ ✦</div>
+</div>
+
+<script>
+let GUESTS = [];
+let TABLE_MAP = {};
+
+async function loadSeating() {
+  try {
+    const res = await fetch(SEATING_CSV_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+
+    GUESTS = [];
+    TABLE_MAP = {};
+
+    rows.forEach(row => {
+      const cols = row.match(/(".*?"|[^,\n]+)(?=,|\n|$)/g) || row.split(',');
+      const clean = s => (s || '').trim().replace(/^"|"$/g, '');
+      const first = clean(cols[0]);
+      const last = clean(cols[1]);
+      const tableNum = clean(cols[2]);
+      const name = (first + ' ' + last).trim();
+      if (!name || name === ' ' || !tableNum) return;
+      GUESTS.push({ name, tableNum });
+      if (!TABLE_MAP[tableNum]) TABLE_MAP[tableNum] = [];
+      TABLE_MAP[tableNum].push(name);
+    });
+  } catch(e) {
+    console.error('Failed to load seating data:', e);
+  }
+}
+
+function doSearch() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  const peopleWrap = document.getElementById('people-list-wrap');
+  const resultCard = document.getElementById('result-card');
+  const noResult = document.getElementById('no-result');
+
+  resultCard.classList.remove('visible');
+  noResult.style.display = 'none';
+
+  if (query.length < 2) {
+    peopleWrap.style.display = 'none';
+    return;
+  }
+
+  const matches = GUESTS.filter(g => g.name.toLowerCase().includes(query));
+
+  if (matches.length === 0) {
+    peopleWrap.style.display = 'none';
+    noResult.style.display = 'block';
+    return;
+  }
+
+  noResult.style.display = 'none';
+  peopleWrap.style.display = 'block';
+
+  document.getElementById('people-label').textContent =
+    matches.length === 1 ? 'Is this you?' : `${matches.length} guests found — tap your name`;
+
+  document.getElementById('people-list').innerHTML = matches.map(g => `
+    <div class="person-row" onclick="showResult('${g.name.replace(/'/g, "\\'")}', '${g.tableNum}')">
+      <div>
+        <div class="person-row-name">${g.name}</div>
+        <div class="person-row-table">Table ${g.tableNum}</div>
+      </div>
+      <div class="person-row-arrow">→</div>
+    </div>
+  `).join('');
+}
+
+function showResult(name, tableNum) {
+  document.getElementById('people-list-wrap').style.display = 'none';
+  document.getElementById('result-name').textContent = name;
+  document.getElementById('result-table-num').textContent = tableNum;
+
+  const tablemates = (TABLE_MAP[tableNum] || []).filter(n => n !== name);
+  document.getElementById('result-tablemates').innerHTML =
+    tablemates.map(n => `<span class="tablemate-chip">${n}</span>`).join('') ||
+    '<span style="font-size:12px;color:var(--muted);font-style:italic;">No other guests found at this table.</span>';
+
+  document.getElementById('result-card').classList.add('visible');
+  document.getElementById('no-result').style.display = 'none';
+}
+
+function clearResult() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('result-card').classList.remove('visible');
+  document.getElementById('people-list-wrap').style.display = 'none';
+  document.getElementById('no-result').style.display = 'none';
+  document.getElementById('search-input').focus();
+}
+
+loadSeating();
+</script>
+</body>
+</html>
